@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synchronizer", "Synchronizer\Synchronizer.csproj", "{E590C92C-E95A-4989-ACA2-00D6E8C6813B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BDA90572-8D16-4DBC-B0CF-FEA3BD693377}
+	EndGlobalSection
+EndGlobal
