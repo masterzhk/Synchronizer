@@ -37,6 +37,11 @@ namespace Synchronizer
         private ConcurrentDictionary<string, TResult> m_results = new ConcurrentDictionary<string, TResult>();
 
         /// <summary>
+        /// 响应参数锁
+        /// </summary>
+        private object m_resultsLocker = new object();
+
+        /// <summary>
         /// 创建一个同步器
         /// </summary>
         /// <param name="action">请求方法</param>
@@ -79,7 +84,11 @@ namespace Synchronizer
                     syncStatus = SyncStatus.Timeout;
                 }
 
-                m_syncEvents.TryRemove(key, out _);
+                lock (m_resultsLocker)
+                {
+                    m_syncEvents.TryRemove(key, out _);
+                    m_results.TryRemove(key, out _);
+                }
             }
 
             return syncStatus;
@@ -91,12 +100,69 @@ namespace Synchronizer
         /// <param name="result"></param>
         public void SetResult(TResult result)
         {
-            string key = m_resultKeySelector(result);
+            lock (m_resultsLocker)
+            {
+                string key = m_resultKeySelector(result);
+                if (m_syncEvents.TryGetValue(key, out ManualResetEvent syncEvent))
+                {
+                    m_results.TryAdd(key, result);
+                    syncEvent.Set();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 开始调用
+        /// </summary>
+        /// <param name="param"></param>
+        public void Start(TParam param)
+        {
+            var key = m_paramKeySelector(param);
+            var syncEvent = new ManualResetEvent(false);
+            m_syncEvents.TryAdd(key, syncEvent);
+        }
+
+        /// <summary>
+        /// 停止调用
+        /// </summary>
+        /// <param name="param"></param>
+        /// <param name="result"></param>
+        /// <param name="millisecondsTimeout"></param>
+        /// <returns></returns>
+        public SyncStatus Stop(TParam param, out TResult result, int millisecondsTimeout)
+        {
+            SyncStatus syncStatus = SyncStatus.Failed;
+
+            result = default(TResult);
+
+            var key = m_paramKeySelector(param);
+
             if (m_syncEvents.TryGetValue(key, out ManualResetEvent syncEvent))
             {
-                m_results.TryAdd(key, result);
-                syncEvent.Set();
+                if (syncEvent.WaitOne(millisecondsTimeout))
+                {
+                    if (m_results.TryRemove(key, out result))
+                    {
+                        syncStatus = SyncStatus.Successful;
+                    }
+                }
+                else
+                {
+                    syncStatus = SyncStatus.Timeout;
+                }
+
+                lock (m_resultsLocker)
+                {
+                    m_syncEvents.TryRemove(key, out _);
+                    m_results.TryRemove(key, out _);
+                }
             }
+            else
+            {
+                syncStatus = SyncStatus.Failed;
+            }
+
+            return syncStatus;
         }
     }
 }
