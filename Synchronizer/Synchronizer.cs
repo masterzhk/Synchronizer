@@ -1,94 +1,112 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Synchronizer
 {
     /// <summary>
-    /// 同步器
+    /// 异步接口同步器
     /// </summary>
-    /// <typeparam name="TParam">请求参数类型</typeparam>
-    /// <typeparam name="TResult">返回参数类型</typeparam>
-    public class Synchronizer<TParam, TResult>
+    /// <typeparam name="TRequestInput">请求参数</typeparam>
+    /// <typeparam name="TRequestOutput">请求结果</typeparam>
+    /// <typeparam name="TResponse">异步结果</typeparam>
+    /// <typeparam name="TKey">同步键类型</typeparam>
+    public class Synchronizer<TRequestInput, TRequestOutput, TResponse, TKey>
     {
         /// <summary>
         /// 请求方法
         /// </summary>
-        private Action<TParam> m_action;
+        private Func<TRequestInput, TRequestOutput> m_RequestFunc;
 
         /// <summary>
-        /// 请求参数特征选择器
+        /// 请求过滤器
         /// </summary>
-        private Func<TParam, string> m_paramKeySelector;
+        private Func<TRequestInput, TRequestOutput, bool> m_RequestFilter;
 
         /// <summary>
-        /// 响应结果特征选择器
+        /// 请求键选择器
         /// </summary>
-        private Func<TResult, string> m_resultKeySelector;
+        private Func<TRequestInput, TRequestOutput, TKey> m_RequestKeySelector;
 
         /// <summary>
-        /// 同步事件
+        /// 异步结果键选择器
         /// </summary>
-        private ConcurrentDictionary<string, ManualResetEvent> m_syncEvents = new ConcurrentDictionary<string, ManualResetEvent>();
+        private Func<TResponse, TKey> m_ResponseKeySelector;
 
         /// <summary>
-        /// 响应参数
+        /// 同步上下文
         /// </summary>
-        private ConcurrentDictionary<string, TResult> m_results = new ConcurrentDictionary<string, TResult>();
-
-        /// <summary>
-        /// 响应参数锁
-        /// </summary>
-        private object m_resultsLocker = new object();
+        private ConcurrentDictionary<TKey, SyncContext<TRequestInput, TRequestOutput, TResponse>> m_SyncContexts = new ConcurrentDictionary<TKey, SyncContext<TRequestInput, TRequestOutput, TResponse>>();
 
         /// <summary>
         /// 创建一个同步器
         /// </summary>
-        /// <param name="action">请求方法</param>
-        /// <param name="paramKeySelector">请求参数特征选择器</param>
-        /// <param name="resultKeySelector">响应结果特征选择器</param>
-        /// <remarks>相同特征的请求参数和响应结果将被同步</remarks>
-        public Synchronizer(Action<TParam> action, Func<TParam, string> paramKeySelector, Func<TResult, string> resultKeySelector)
+        /// <param name="requestFunc">请求方法</param>
+        /// <param name="requestFilter">请求过滤器</param>
+        /// <param name="requestKeySelector">请求键选择器</param>
+        /// <param name="responseKeySelector">异步结果键选择器</param>
+        /// <remarks>
+        /// 请求过滤器requestFilter返回true表示是有效的请求，否则请求无效，不同步异步结果。
+        /// 请求键选择器返回的键与异步结果键选择器返回的键相等表示同步成功，否则同步失败。
+        /// </remarks>
+        public Synchronizer(
+            Func<TRequestInput, TRequestOutput> requestFunc,
+            Func<TRequestInput, TRequestOutput, bool> requestFilter,
+            Func<TRequestInput, TRequestOutput, TKey> requestKeySelector,
+            Func<TResponse, TKey> responseKeySelector
+            )
         {
-            m_action = action;
-            m_paramKeySelector = paramKeySelector;
-            m_resultKeySelector = resultKeySelector;
+            m_RequestFunc = requestFunc;
+            m_RequestFilter = requestFilter;
+            m_RequestKeySelector = requestKeySelector;
+            m_ResponseKeySelector = responseKeySelector;
         }
 
         /// <summary>
-        /// 同步等待请求响应
+        /// 同步请求
         /// </summary>
-        /// <param name="param"></param>
-        /// <returns></returns>
-        public SyncStatus GetResult(TParam param, out TResult result, int millisecondsTimeout)
+        /// <param name="requestInput">请求参数</param>
+        /// <param name="requestOutput">请求结果</param>
+        /// <param name="response">异步结果</param>
+        /// <param name="millisecondsTimeout">超时时间</param>
+        /// <returns>同步结果</returns>
+        public SyncStatus SyncRequest(
+            TRequestInput requestInput,
+            out TRequestOutput requestOutput,
+            out TResponse response,
+            TimeSpan timeout
+            )
         {
             SyncStatus syncStatus = SyncStatus.Failed;
 
-            result = default(TResult);
+            response = default(TResponse);
 
-            var key = m_paramKeySelector(param);
+            requestOutput = m_RequestFunc(requestInput);
+            TRequestOutput requestOutputTemp = requestOutput;
 
-            var syncEvent = new ManualResetEvent(false);
-            if (m_syncEvents.TryAdd(key, syncEvent))
+            if (m_RequestFilter(requestInput, requestOutput))
             {
-                m_action(param);
-                if (syncEvent.WaitOne(millisecondsTimeout))
+                TKey key = m_RequestKeySelector(requestInput, requestOutput);
+                SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = m_SyncContexts.GetOrAdd(key, k => new SyncContext<TRequestInput, TRequestOutput, TResponse>()
                 {
-                    if (m_results.TryRemove(key, out result))
-                    {
-                        syncStatus = SyncStatus.Successful;
-                    }
+                    RequestInput = requestInput,
+                    RequestOutput = requestOutputTemp,
+                });
+                syncContext.RequestInput = requestInput;
+                syncContext.RequestOutput = requestOutputTemp;
+
+                if (syncContext.ManualResetEvent.WaitOne(timeout))
+                {
+                    syncStatus = SyncStatus.Successful;
+                    response = syncContext.Response;
                 }
                 else
                 {
                     syncStatus = SyncStatus.Timeout;
                 }
 
-                lock (m_resultsLocker)
-                {
-                    m_syncEvents.TryRemove(key, out _);
-                    m_results.TryRemove(key, out _);
-                }
+                m_SyncContexts.TryRemove(key, out _);
             }
 
             return syncStatus;
@@ -98,71 +116,17 @@ namespace Synchronizer
         /// 请求响应通知
         /// </summary>
         /// <param name="result"></param>
-        public void SetResult(TResult result)
+        public void FeedResponse(TResponse response)
         {
-            lock (m_resultsLocker)
+            TKey key = m_ResponseKeySelector(response);
+
+            SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = m_SyncContexts.GetOrAdd(key, k => new SyncContext<TRequestInput, TRequestOutput, TResponse>()
             {
-                string key = m_resultKeySelector(result);
-                if (m_syncEvents.TryGetValue(key, out ManualResetEvent syncEvent))
-                {
-                    m_results.TryAdd(key, result);
-                    syncEvent.Set();
-                }
-            }
-        }
+                Response = response,
+            });
+            syncContext.Response = response;
 
-        /// <summary>
-        /// 开始调用
-        /// </summary>
-        /// <param name="param"></param>
-        public void Start(TParam param)
-        {
-            var key = m_paramKeySelector(param);
-            var syncEvent = new ManualResetEvent(false);
-            m_syncEvents.TryAdd(key, syncEvent);
-        }
-
-        /// <summary>
-        /// 停止调用
-        /// </summary>
-        /// <param name="param"></param>
-        /// <param name="result"></param>
-        /// <param name="millisecondsTimeout"></param>
-        /// <returns></returns>
-        public SyncStatus Stop(TParam param, out TResult result, int millisecondsTimeout)
-        {
-            SyncStatus syncStatus = SyncStatus.Failed;
-
-            result = default(TResult);
-
-            var key = m_paramKeySelector(param);
-
-            if (m_syncEvents.TryGetValue(key, out ManualResetEvent syncEvent))
-            {
-                if (syncEvent.WaitOne(millisecondsTimeout))
-                {
-                    if (m_results.TryRemove(key, out result))
-                    {
-                        syncStatus = SyncStatus.Successful;
-                    }
-                }
-                else
-                {
-                    syncStatus = SyncStatus.Timeout;
-                }
-
-                lock (m_resultsLocker)
-                {
-                    m_syncEvents.TryRemove(key, out _);
-                    m_results.TryRemove(key, out _);
-                }
-            }
-            else
-            {
-                syncStatus = SyncStatus.Failed;
-            }
-
-            return syncStatus;
+            syncContext.ManualResetEvent.Set();
         }
     }
 }
