@@ -32,7 +32,7 @@ namespace UnitTest
             string responseValueSynced
             )
         {
-            Synchronizer<RequestInput, RequestOutput, Response, string> synchronizer = new Synchronizer<RequestInput, RequestOutput, Response, string>(
+            RequestSynchronizer<RequestInput, RequestOutput, Response, string> synchronizer = new RequestSynchronizer<RequestInput, RequestOutput, Response, string>(
                 input => new RequestOutput() { Result = input.Arg % 2 == 0 },
                 (input, output) => output.Result,
                 (input, output) => input.SN,

@@ -12,7 +12,7 @@ namespace Synchronizer
     /// <typeparam name="TRequestOutput">请求结果</typeparam>
     /// <typeparam name="TResponse">异步结果</typeparam>
     /// <typeparam name="TKey">同步键类型</typeparam>
-    public class Synchronizer<TRequestInput, TRequestOutput, TResponse, TKey>
+    public class RequestSynchronizer<TRequestInput, TRequestOutput, TResponse, TKey>
     {
         /// <summary>
         /// 请求方法
@@ -50,7 +50,7 @@ namespace Synchronizer
         /// 请求过滤器requestFilter返回true表示是有效的请求，否则请求无效，不同步异步结果。
         /// 请求键选择器返回的键与异步结果键选择器返回的键相等表示同步成功，否则同步失败。
         /// </remarks>
-        public Synchronizer(
+        public RequestSynchronizer(
             Func<TRequestInput, TRequestOutput> requestFunc,
             Func<TRequestInput, TRequestOutput, bool> requestFilter,
             Func<TRequestInput, TRequestOutput, TKey> requestKeySelector,
