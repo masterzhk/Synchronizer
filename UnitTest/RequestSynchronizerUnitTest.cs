@@ -20,7 +20,7 @@ namespace UnitTest
         [DataRow("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
         [DataRow("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
         [DataRow("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
-        public void TestMethodSyncRequest(
+        public void SyncRequestTestMethod(
             string requestInputSn,
             int requestInputArg,
             int syncTimeout,
