@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace UnitTest
 {
     [TestClass]
-    public class UnitTestSynchronizer
+    public class RequestSynchronizerUnitTest
     {
         [TestMethod]
         [DataRow("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
