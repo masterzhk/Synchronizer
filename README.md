@@ -15,7 +15,7 @@ Synchronizer旨在把异步调用封装成同步调用。
    RequestSynchronizer<RequestInput, RequestOutput, Response, string> synchronizer = new RequestSynchronizer<RequestInput, RequestOutput, Response, string>(
                    input => AsyncRequestMethod(input),  // 异步调用方法
                    (input, output) => output.Succeeded, // 过滤失败的异步调用
-                   (input, output) => output.RequestId, // 指定请求标识
+                   input => input.RequestId,            // 指定请求标识
                    response => response.RequestId);     // 指定请求标识
    ```
 
@@ -34,5 +34,19 @@ var syncStatus = synchronizer.SyncRequest(requestInput, out RequestOutput reques
 ### 注意事项
 
 1. 指定的请求标识来同步关联，如果存在重用请求标识的情况，需要保证错开重用。
-2. 通过FeedResponse喂入 请求标识无关联 的结果会一直保存在内存里。
-3. 同步调用超时后，通过FeedResponse喂入的关联结果会一直保存在内存里（超时后已无关联）。
+
+如果请求标识不需要依赖同步请求返回的话（即请求标识由发起调用方指定），请使用requestKeySelector为Func<TRequestInput, TKey>类型的重载构造，该款实现不会导致缓存累积。
+
+```CSharp
+public RequestSynchronizer(
+            Func<TRequestInput, TRequestOutput> requestFunc,
+            Func<TRequestInput, TRequestOutput, bool> requestFilter,
+            Func<TRequestInput, TKey> requestKeySelector,
+            Func<TResponse, TKey> responseKeySelector
+            )
+```
+
+使用requestKeySelector为Func<TRequestInput, TRequestOutput, TKey>类型的重载构造，会有以下问题（后续可能会加清理逻辑）
+
+1. 通过FeedResponse喂入 请求标识无关联 的结果会一直保存在内存里。
+2. 同步调用超时后，通过FeedResponse喂入的关联结果会一直保存在内存里（超时后已无关联）。
