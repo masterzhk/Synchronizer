@@ -14,16 +14,16 @@ namespace NUnitTest
         }
 
         [Test]
-        [TestCase("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
-        [TestCase("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
-        [TestCase("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
-        [TestCase("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
-        [TestCase("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
-        [TestCase("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Successful, "4")]
-        [TestCase("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
-        [TestCase("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
-        [TestCase("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
-        [TestCase("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
+        [TestCase("Guid001", -1, 3, false, "Guid001", "-1", 1, SyncStatus.Failed, null)]
+        [TestCase("Guid002", -4, 3, true, "Guid002", "-4", 1, SyncStatus.Successful, "-4")]
+        [TestCase("Guid003", 0, 3, true, "Guid003", "0", 1, SyncStatus.Successful, "0")]
+        [TestCase("Guid004", 1, 3, false, "Guid004", "1", 1, SyncStatus.Failed, null)]
+        [TestCase("Guid005", 4, 3, true, "Guid005", "4", 1, SyncStatus.Successful, "4")]
+        [TestCase("Guid006", 4, 3, true, "Guid006", "4", 0, SyncStatus.Successful, "4")]
+        [TestCase("Guid007", 4, 3, true, "Guid007", "4", 2, SyncStatus.Successful, "4")]
+        [TestCase("Guid008", 4, 3, true, "Guid008", "4", 4, SyncStatus.Timeout, null)]
+        [TestCase("Guid009", 4, 3, true, "Guid009", "4", 5, SyncStatus.Timeout, null)]
+        [TestCase("Guid010", 4, 0, true, "Guid010", "4", 1, SyncStatus.Timeout, null)]
         public void SyncRequestWithRequestOutputTestMethod(
             string requestInputSn,
             int requestInputArg,
@@ -59,16 +59,16 @@ namespace NUnitTest
         }
 
         [Test]
-        [TestCase("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
-        [TestCase("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
-        [TestCase("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
-        [TestCase("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
-        [TestCase("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
-        [TestCase("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Timeout, null)]
-        [TestCase("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
-        [TestCase("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
-        [TestCase("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
-        [TestCase("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
+        [TestCase("Guid001", -1, 3, false, "Guid001", "-1", 1, SyncStatus.Failed, null)]
+        [TestCase("Guid002", -4, 3, true, "Guid002", "-4", 1, SyncStatus.Successful, "-4")]
+        [TestCase("Guid003", 0, 3, true, "Guid003", "0", 1, SyncStatus.Successful, "0")]
+        [TestCase("Guid004", 1, 3, false, "Guid004", "1", 1, SyncStatus.Failed, null)]
+        [TestCase("Guid005", 4, 3, true, "Guid005", "4", 1, SyncStatus.Successful, "4")]
+        [TestCase("Guid006", 4, 3, true, "Guid006", "4", 0, SyncStatus.Timeout, null)]
+        [TestCase("Guid007", 4, 3, true, "Guid007", "4", 2, SyncStatus.Successful, "4")]
+        [TestCase("Guid008", 4, 3, true, "Guid008", "4", 4, SyncStatus.Timeout, null)]
+        [TestCase("Guid009", 4, 3, true, "Guid009", "4", 5, SyncStatus.Timeout, null)]
+        [TestCase("Guid010", 4, 0, true, "Guid010", "4", 1, SyncStatus.Timeout, null)]
         public void SyncRequestWithoutRequestOutputTestMethod(
             string requestInputSn,
             int requestInputArg,
