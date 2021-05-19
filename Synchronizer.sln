@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Synchronizer", "Synchronizer\Synchronizer.csproj", "{E590C92C-E95A-4989-ACA2-00D6E8C6813B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{AABAA2C4-C613-4739-A289-AAC124F0CC67}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitTest", "NUnitTest\NUnitTest.csproj", "{8D1951B4-0050-4941-B96B-C96F32C3AB0C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E590C92C-E95A-4989-ACA2-00D6E8C6813B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AABAA2C4-C613-4739-A289-AAC124F0CC67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AABAA2C4-C613-4739-A289-AAC124F0CC67}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AABAA2C4-C613-4739-A289-AAC124F0CC67}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AABAA2C4-C613-4739-A289-AAC124F0CC67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D1951B4-0050-4941-B96B-C96F32C3AB0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D1951B4-0050-4941-B96B-C96F32C3AB0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D1951B4-0050-4941-B96B-C96F32C3AB0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D1951B4-0050-4941-B96B-C96F32C3AB0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

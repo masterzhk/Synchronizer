@@ -1,25 +1,29 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Synchronizer;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UnitTest
+namespace NUnitTest
 {
-    [TestClass]
     public class RequestSynchronizerUnitTest
     {
-        [TestMethod]
-        [DataRow("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
-        [DataRow("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
-        [DataRow("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
-        [DataRow("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
-        [DataRow("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
-        [DataRow("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Successful, "4")]
-        [DataRow("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
-        [DataRow("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
-        [DataRow("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
-        [DataRow("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
+        [SetUp]
+        public void Setup()
+        {
+        }
+
+        [Test]
+        [TestCase("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
+        [TestCase("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
+        [TestCase("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
+        [TestCase("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
+        [TestCase("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
+        [TestCase("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Successful, "4")]
+        [TestCase("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
+        [TestCase("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
+        [TestCase("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
+        [TestCase("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
         public void SyncRequestWithRequestOutputTestMethod(
             string requestInputSn,
             int requestInputArg,
@@ -54,17 +58,17 @@ namespace UnitTest
             Assert.IsTrue(response?.Value == responseValueSynced);
         }
 
-        [TestMethod]
-        [DataRow("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
-        [DataRow("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
-        [DataRow("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
-        [DataRow("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
-        [DataRow("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
-        [DataRow("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Timeout, null)]
-        [DataRow("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
-        [DataRow("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
-        [DataRow("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
-        [DataRow("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
+        [Test]
+        [TestCase("guid001", -1, 3, false, "guid001", "-1", 1, SyncStatus.Failed, null)]
+        [TestCase("guid002", -4, 3, true, "guid002", "-4", 1, SyncStatus.Successful, "-4")]
+        [TestCase("guid003", 0, 3, true, "guid003", "0", 1, SyncStatus.Successful, "0")]
+        [TestCase("guid004", 1, 3, false, "guid004", "1", 1, SyncStatus.Failed, null)]
+        [TestCase("guid005", 4, 3, true, "guid005", "4", 1, SyncStatus.Successful, "4")]
+        [TestCase("guid006", 4, 3, true, "guid006", "4", 0, SyncStatus.Timeout, null)]
+        [TestCase("guid007", 4, 3, true, "guid007", "4", 2, SyncStatus.Successful, "4")]
+        [TestCase("guid008", 4, 3, true, "guid008", "4", 4, SyncStatus.Timeout, null)]
+        [TestCase("guid009", 4, 3, true, "guid009", "4", 5, SyncStatus.Timeout, null)]
+        [TestCase("guid010", 4, 0, true, "guid010", "4", 1, SyncStatus.Timeout, null)]
         public void SyncRequestWithoutRequestOutputTestMethod(
             string requestInputSn,
             int requestInputArg,
