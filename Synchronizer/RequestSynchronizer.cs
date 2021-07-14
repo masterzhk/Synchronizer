@@ -27,12 +27,12 @@ namespace Synchronizer
         /// <summary>
         /// 请求键选择器
         /// </summary>
-        private Func<TRequestInput, TRequestOutput, TKey> m_RequestKeySelector;
+        private Func<TRequestInput, TRequestOutput, TKey> m_RequestKeySelectorWithRequestOutput;
 
         /// <summary>
-        /// 请求键选择是否依赖请求结果
+        /// 请求键选择器
         /// </summary>
-        private bool m_RequestKeySelectorWithRequestOutput;
+        private Func<TRequestInput, TKey> m_RequestKeySelectorWithoutRequestOutput;
 
         /// <summary>
         /// 异步结果键选择器
@@ -43,6 +43,32 @@ namespace Synchronizer
         /// 同步上下文
         /// </summary>
         private ConcurrentDictionary<TKey, SyncContext<TRequestInput, TRequestOutput, TResponse>> m_SyncContexts = new ConcurrentDictionary<TKey, SyncContext<TRequestInput, TRequestOutput, TResponse>>();
+
+        /// <summary>
+        /// 同步请求
+        /// </summary>
+        /// <param name="requestInput">请求参数</param>
+        /// <param name="requestOutput">请求结果</param>
+        /// <param name="response">异步结果</param>
+        /// <param name="timeout">超时时间</param>
+        /// <returns>同步结果</returns>
+        private delegate SyncStatus SyncRequestDelegate(TRequestInput requestInput, out TRequestOutput requestOutput, out TResponse response, TimeSpan timeout);
+
+        /// <summary>
+        /// 同步请求
+        /// </summary>
+        private SyncRequestDelegate m_SyncRequestDelegate;
+
+        /// <summary>
+        /// 请求响应
+        /// </summary>
+        /// <param name="response"></param>
+        private delegate void FeedResponseDelegate(TResponse response);
+
+        /// <summary>
+        /// 请求响应
+        /// </summary>
+        private FeedResponseDelegate m_FeedResponseDelegate;
 
         /// <summary>
         /// 创建一个同步器
@@ -64,9 +90,11 @@ namespace Synchronizer
         {
             m_RequestFunc = requestFunc;
             m_RequestFilter = requestFilter;
-            m_RequestKeySelector = requestKeySelector;
-            m_RequestKeySelectorWithRequestOutput = true;
+            m_RequestKeySelectorWithRequestOutput = requestKeySelector;
             m_ResponseKeySelector = responseKeySelector;
+
+            m_SyncRequestDelegate = SyncRequestWithRequestOutput;
+            m_FeedResponseDelegate = FeedResponseWithRequestOutput;
         }
 
         /// <summary>
@@ -89,9 +117,11 @@ namespace Synchronizer
         {
             m_RequestFunc = requestFunc;
             m_RequestFilter = requestFilter;
-            m_RequestKeySelector = (requestInput, requestOutput) => requestKeySelector(requestInput);
-            m_RequestKeySelectorWithRequestOutput = false;
+            m_RequestKeySelectorWithoutRequestOutput = requestKeySelector;
             m_ResponseKeySelector = responseKeySelector;
+
+            m_SyncRequestDelegate = SyncRequestWithoutRequestOutput;
+            m_FeedResponseDelegate = FeedResponseWithoutRequestOutput;
         }
 
         /// <summary>
@@ -100,7 +130,7 @@ namespace Synchronizer
         /// <param name="requestInput">请求参数</param>
         /// <param name="requestOutput">请求结果</param>
         /// <param name="response">异步结果</param>
-        /// <param name="millisecondsTimeout">超时时间</param>
+        /// <param name="timeout">超时时间</param>
         /// <returns>同步结果</returns>
         public SyncStatus SyncRequest(
             TRequestInput requestInput,
@@ -109,7 +139,7 @@ namespace Synchronizer
             TimeSpan timeout
             )
         {
-            return m_RequestKeySelectorWithRequestOutput ? SyncRequestWithRequestOutput(requestInput, out requestOutput, out response, timeout) : SyncRequestWithoutRequestOutput(requestInput, out requestOutput, out response, timeout);
+            return m_SyncRequestDelegate(requestInput, out requestOutput, out response, timeout);
         }
 
         /// <summary>
@@ -118,7 +148,7 @@ namespace Synchronizer
         /// <param name="requestInput">请求参数</param>
         /// <param name="requestOutput">请求结果</param>
         /// <param name="response">异步结果</param>
-        /// <param name="millisecondsTimeout">超时时间</param>
+        /// <param name="timeout">超时时间</param>
         /// <returns>同步结果</returns>
         private SyncStatus SyncRequestWithRequestOutput(
             TRequestInput requestInput,
@@ -129,22 +159,34 @@ namespace Synchronizer
         {
             SyncStatus syncStatus = SyncStatus.Failed;
 
-            response = default(TResponse);
+            response = default;
 
-            requestOutput = m_RequestFunc(requestInput);
-            TRequestOutput requestOutputTemp = requestOutput;
+            bool syncContextAdded = false;
+            TKey key = default;
+            SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = default;
 
-            if (m_RequestFilter(requestInput, requestOutput))
+            lock (m_SyncContexts)
             {
-                TKey key = m_RequestKeySelector(requestInput, requestOutput);
-                SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = m_SyncContexts.GetOrAdd(key, k => new SyncContext<TRequestInput, TRequestOutput, TResponse>()
-                {
-                    RequestInput = requestInput,
-                    RequestOutput = requestOutputTemp,
-                });
-                syncContext.RequestInput = requestInput;
-                syncContext.RequestOutput = requestOutputTemp;
+                requestOutput = m_RequestFunc(requestInput);
 
+                if (m_RequestFilter(requestInput, requestOutput))
+                {
+                    key = m_RequestKeySelectorWithRequestOutput(requestInput, requestOutput);
+                    syncContext = new SyncContext<TRequestInput, TRequestOutput, TResponse>()
+                    {
+                        RequestInput = requestInput,
+                        RequestOutput = requestOutput,
+                    };
+
+                    if (m_SyncContexts.TryAdd(key, syncContext))
+                    {
+                        syncContextAdded = true;
+                    }
+                }
+            }
+
+            if (syncContextAdded)
+            {
                 if (syncContext.ManualResetEvent.WaitOne(timeout))
                 {
                     syncStatus = SyncStatus.Successful;
@@ -167,7 +209,7 @@ namespace Synchronizer
         /// <param name="requestInput">请求参数</param>
         /// <param name="requestOutput">请求结果</param>
         /// <param name="response">异步结果</param>
-        /// <param name="millisecondsTimeout">超时时间</param>
+        /// <param name="timeout">超时时间</param>
         /// <returns>同步结果</returns>
         private SyncStatus SyncRequestWithoutRequestOutput(
             TRequestInput requestInput,
@@ -178,78 +220,71 @@ namespace Synchronizer
         {
             SyncStatus syncStatus = SyncStatus.Failed;
 
-            response = default(TResponse);
+            response = default;
+            requestOutput = default;
 
-            requestOutput = default(TRequestOutput);
-            TRequestOutput requestOutputTemp = requestOutput;
-
-            TKey key = m_RequestKeySelector(requestInput, requestOutput);
-            SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = m_SyncContexts.GetOrAdd(key, k => new SyncContext<TRequestInput, TRequestOutput, TResponse>()
+            TKey key = m_RequestKeySelectorWithoutRequestOutput(requestInput);
+            SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = new SyncContext<TRequestInput, TRequestOutput, TResponse>()
             {
                 RequestInput = requestInput,
-                RequestOutput = requestOutputTemp,
-            });
-            syncContext.RequestInput = requestInput;
-            syncContext.RequestOutput = requestOutputTemp;
+                RequestOutput = requestOutput,
+            };
 
-            requestOutput = m_RequestFunc(requestInput);
-            syncContext.RequestOutput = requestOutputTemp;
-
-            if (m_RequestFilter(requestInput, requestOutput))
+            if (m_SyncContexts.TryAdd(key, syncContext))
             {
-                if (syncContext.ManualResetEvent.WaitOne(timeout))
-                {
-                    syncStatus = SyncStatus.Successful;
-                    response = syncContext.Response;
-                }
-                else
-                {
-                    syncStatus = SyncStatus.Timeout;
-                }
-            }
+                requestOutput = m_RequestFunc(requestInput);
+                syncContext.RequestOutput = requestOutput;
 
-            m_SyncContexts.TryRemove(key, out _);
+                if (m_RequestFilter(requestInput, requestOutput))
+                {
+                    if (syncContext.ManualResetEvent.WaitOne(timeout))
+                    {
+                        syncStatus = SyncStatus.Successful;
+                        response = syncContext.Response;
+                    }
+                    else
+                    {
+                        syncStatus = SyncStatus.Timeout;
+                    }
+                }
+
+                m_SyncContexts.TryRemove(key, out _);
+            }
 
             return syncStatus;
         }
 
         /// <summary>
-        /// 请求响应通知
+        /// 请求响应
         /// </summary>
-        /// <param name="result"></param>
+        /// <param name="response"></param>
         public void FeedResponse(TResponse response)
         {
-            if (m_RequestKeySelectorWithRequestOutput)
-            {
-                FeedResponseWithRequestOutput(response);
-            }
-            else
-            {
-                FeedResponseWithoutRequestOutput(response);
-            }
+            m_FeedResponseDelegate(response);
+
         }
 
         /// <summary>
-        /// 请求响应通知
+        /// 请求响应
         /// </summary>
-        /// <param name="result"></param>
+        /// <param name="response"></param>
         private void FeedResponseWithRequestOutput(TResponse response)
         {
             TKey key = m_ResponseKeySelector(response);
-
-            SyncContext<TRequestInput, TRequestOutput, TResponse> syncContext = m_SyncContexts.GetOrAdd(key, k => new SyncContext<TRequestInput, TRequestOutput, TResponse>()
+            lock (m_SyncContexts)
             {
-                Response = response,
-            });
-            syncContext.Response = response;
-
-            syncContext.ManualResetEvent.Set();
+                if (m_SyncContexts.TryGetValue(key, out var syncContext))
+                {
+                    syncContext.Response = response;
+                    syncContext.ManualResetEvent.Set();
+                }
+            }
         }
 
         /// <summary>
-        /// 请求响应通知
+        /// 请求响应
         /// </summary>
-        /// <param name="result"></param>
+        /// <param name="response"></param>
         private void FeedResponseWithoutRequestOutput(TResponse response)
         {
             TKey key = m_ResponseKeySelector(response);
